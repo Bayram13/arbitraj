@@ -10,7 +10,7 @@ app = Flask(__name__)
 # === TƏNZİMLƏMƏLƏR ===
 ARBITRAGE_PERCENT = 0.5       # Minimum 0.5% fərq
 MAX_ARBITRAGE_PERCENT = 30.0  
-MIN_VOLUME_USDT = 1000000     # Minimum 24 saatlıq həcm (1 Milyon dollar). İstəyə görə dəyişə bilərsiniz.
+MIN_VOLUME_USDT = 100     # Minimum 24 saatlıq həcm (1 Milyon dollar). İstəyə görə dəyişə bilərsiniz.
 TELEGRAM_BOT_TOKEN = "SƏNİN_TELEGRAM_BOT_TOKENİNİ_BURAYA_YAZ"
 TELEGRAM_CHAT_ID = "SƏNİN_CHAT_İD_BURAYA_YAZ"
 
