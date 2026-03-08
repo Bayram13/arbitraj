@@ -1,64 +1,203 @@
 <!DOCTYPE html>
-<html lang="az">
+<html lang="az" data-bs-theme="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Canlı Arbitraj Skaneri</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <title>Crypto Arbitrage Pro</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
-        body { background-color: #121212; color: #ffffff; }
-        .table-dark { background-color: #1e1e1e; }
+        body {
+            font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+        .app-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem 1rem;
+        }
+        .header-action {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+        }
+        .card-custom {
+            border-radius: 16px;
+            border: none;
+            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
+            overflow: hidden;
+            transition: background-color 0.3s ease;
+        }
+        .table {
+            margin-bottom: 0;
+        }
+        .table th {
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 0.85rem;
+            letter-spacing: 0.5px;
+            padding: 1.2rem 1rem;
+        }
+        .table td {
+            vertical-align: middle;
+            padding: 1rem;
+        }
+        a.exchange-link {
+            text-decoration: none;
+            font-weight: 600;
+        }
+        a.exchange-link:hover {
+            text-decoration: underline;
+        }
+        .theme-toggle-btn {
+            background: transparent;
+            border: 1px solid var(--bs-border-color);
+            color: var(--bs-body-color);
+            padding: 0.5rem 1rem;
+            border-radius: 50px;
+            cursor: pointer;
+            font-size: 1.1rem;
+            transition: all 0.2s ease;
+        }
+        .theme-toggle-btn:hover {
+            background-color: var(--bs-tertiary-bg);
+        }
+        .filter-select {
+            border-radius: 50px;
+            padding: 0.5rem 1.5rem;
+            cursor: pointer;
+            border: 1px solid var(--bs-border-color);
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+        /* Gündüz rejimi üçün xüsusi düzəlişlər */
+        [data-bs-theme="light"] .card-custom {
+            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.04);
+        }
+        [data-bs-theme="light"] body {
+            background-color: #f8f9fa;
+        }
     </style>
     <script>
+        let allData = []; 
+
+        // Mövzu tənzimləmələri
+        function initTheme() {
+            const savedTheme = localStorage.getItem('theme') || 'dark';
+            document.documentElement.setAttribute('data-bs-theme', savedTheme);
+            updateThemeIcon(savedTheme);
+        }
+
+        function toggleTheme() {
+            const currentTheme = document.documentElement.getAttribute('data-bs-theme');
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            document.documentElement.setAttribute('data-bs-theme', newTheme);
+            localStorage.setItem('theme', newTheme);
+            updateThemeIcon(newTheme);
+        }
+
+        function updateThemeIcon(theme) {
+            const iconElement = document.getElementById('theme-icon');
+            iconElement.innerHTML = theme === 'dark' ? '☀️ Gündüz Modu' : '🌙 Gecə Modu';
+        }
+
+        // Data çəkmək
         async function fetchData() {
             try {
                 const response = await fetch('/api/data');
-                const data = await response.json();
-                
-                let tableHTML = "";
-                if(data.length === 0) {
-                    tableHTML = `<tr><td colspan="5" class="text-center text-muted">Hazırda limitlərə uyğun arbitraj yoxdur...</td></tr>`;
-                } else {
-                    data.forEach(row => {
-                        tableHTML += `
-                            <tr>
-                                <td><strong>${row.token}</strong></td>
-                                <td class="text-success">${row.buy_ex} <br> <small>${row.buy_p}</small></td>
-                                <td class="text-danger">${row.sell_ex} <br> <small>${row.sell_p}</small></td>
-                                <td><strong class="text-warning">${row.diff.toFixed(2)}%</strong></td>
-                                <td>${row.tp_price.toFixed(4)}</td>
-                            </tr>
-                        `;
-                    });
-                }
-                document.getElementById('arb-table-body').innerHTML = tableHTML;
+                allData = await response.json();
+                renderTable(); 
             } catch (error) {
-                console.error('Məlumat yenilənmədi:', error);
+                console.error('Data xətası:', error);
             }
         }
-        setInterval(fetchData, 3000); // 3 saniyədən bir yenilə
-        window.onload = fetchData;
+
+        // Cədvəli qurmaq
+        function renderTable() {
+            const filterValue = document.getElementById('exchangeFilter').value;
+            let tableHTML = "";
+            
+            let filteredData = allData;
+            if (filterValue !== "ALL") {
+                filteredData = allData.filter(row => row.buy_ex === filterValue || row.sell_ex === filterValue);
+            }
+
+            if(filteredData.length === 0) {
+                tableHTML = `<tr><td colspan="6" class="text-center text-muted py-5">Axtarışa uyğun və ya 0.5% limitini keçən arbitraj yoxdur...</td></tr>`;
+            } else {
+                filteredData.forEach(row => {
+                    tableHTML += `
+                        <tr>
+                            <td><strong class="fs-5">${row.token}</strong></td>
+                            <td>
+                                <a href="${row.buy_url}" target="_blank" class="exchange-link text-success">${row.buy_ex}</a> 
+                                <br> <span class="text-secondary opacity-75">${row.buy_p}</span>
+                            </td>
+                            <td>
+                                <a href="${row.sell_url}" target="_blank" class="exchange-link text-danger">${row.sell_ex}</a> 
+                                <br> <span class="text-secondary opacity-75">${row.sell_p}</span>
+                            </td>
+                            <td>
+                                <span class="badge bg-primary px-3 py-2 rounded-pill fs-6">${row.diff.toFixed(2)}%</span>
+                            </td>
+                            <td class="fw-medium">${row.tp_price.toFixed(4)}</td>
+                            <td><span class="text-muted small">${row.time.split(' ')[1]} UTC</span></td>
+                        </tr>
+                    `;
+                });
+            }
+            document.getElementById('arb-table-body').innerHTML = tableHTML;
+        }
+
+        setInterval(fetchData, 3000);
+        window.onload = () => {
+            initTheme();
+            fetchData();
+        };
     </script>
 </head>
 <body>
-    <div class="container mt-5">
-        <h2 class="text-center mb-4">⚡ Canlı Futures Arbitraj (OKX Mərkəzli)</h2>
-        <div class="table-responsive">
-            <table class="table table-dark table-striped table-hover text-center align-middle">
-                <thead>
-                    <tr>
-                        <th>Token</th>
-                        <th>Alınacaq Birja / Qiymət</th>
-                        <th>Satılacaq Birja / Qiymət</th>
-                        <th>Faiz Fərqi</th>
-                        <th>Təxmini TP (Orta)</th>
-                    </tr>
-                </thead>
-                <tbody id="arb-table-body">
-                    <tr><td colspan="5">Skaner işə düşür... Gözləyin.</td></tr>
-                </tbody>
-            </table>
+    <div class="app-container">
+        <div class="header-action">
+            <h2 class="fw-bold m-0 text-primary">⚡ ArbitrageScanner</h2>
+            
+            <div class="d-flex gap-3 align-items-center">
+                <select id="exchangeFilter" class="form-select filter-select bg-body text-body" onchange="renderTable()">
+                    <option value="ALL">🔍 Bütün Cütlüklər (OKX / Tümü)</option>
+                    <option value="Binance">OKX / Binance</option>
+                    <option value="Bybit">OKX / Bybit</option>
+                    <option value="MEXC">OKX / MEXC</option>
+                    <option value="KuCoin">OKX / KuCoin</option>
+                    <option value="GateIO">OKX / GateIO</option>
+                    <option value="Bitget">OKX / Bitget</option>
+                    <option value="HTX">OKX / HTX</option>
+                </select>
+
+                <button class="theme-toggle-btn d-flex align-items-center gap-2" onclick="toggleTheme()" id="theme-icon">
+                    ☀️ Gündüz Modu
+                </button>
+            </div>
         </div>
+
+        <div class="card card-custom bg-body-tertiary">
+            <div class="table-responsive">
+                <table class="table table-hover text-center align-middle mb-0">
+                    <thead class="table-group-divider">
+                        <tr>
+                            <th>Token</th>
+                            <th>Alınacaq Birja (Buy)</th>
+                            <th>Satılacaq Birja (Sell)</th>
+                            <th>Fərq (%)</th>
+                            <th>Hədəf (Target TP)</th>
+                            <th>Siqnal Vaxtı</th>
+                        </tr>
+                    </thead>
+                    <tbody id="arb-table-body" class="table-group-divider border-top-0">
+                        <tr><td colspan="6" class="py-5 text-muted">Sistem yoxlanılır... Lütfən gözləyin.</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
     </div>
 </body>
 </html>
